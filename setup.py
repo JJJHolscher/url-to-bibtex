@@ -1,17 +1,16 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='readwise-to-zotero',
+    name='url-to-bibtex',
     version='0.1.0',
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
         'requests',
-        'toml',
     ],
     entry_points={
         'console_scripts': [
-            'readwise-to-zotero=readwise_to_zotero:main',
+            'url-to-bibtex=url_to_bibtex:main',
         ],
     },
     author='Jochem Holscher',
