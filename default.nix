@@ -1,9 +1,12 @@
 { pkgs ? import <nixpkgs> {} }:
 
 let
-  inherit (pkgs.lib) fetchFromGitHub;
+  inherit (pkgs) fetchFromGitHub;
+  inherit (pkgs.lib) licenses;
 
-  # Translation Server Package
+  lib = pkgs.lib;
+
+  # Translation Server Package (unchanged)
   translation-server = pkgs.stdenv.mkDerivation rec {
     pname = "translation-server";
     version = "master";
@@ -12,7 +15,7 @@ let
       owner = "zotero";
       repo = "translation-server";
       rev = "master";
-      sha256 = "sha256-VbJXMsayq0+doR4W8Gl36RkcL0eCjkuJh2G5Vtihmqw="; # Update this hash after building
+      sha256 = lib.fakeSha256;  # Replace with the correct hash after building
     };
 
     nativeBuildInputs = [ pkgs.nodejs ];
@@ -38,14 +41,14 @@ let
     };
   };
 
-  # Python Script Package
+  # Python Script Package with Updated Dependencies
   readwise-to-zotero = pkgs.python3Packages.buildPythonApplication {
     pname = "readwise-to-zotero";
     version = "0.1";
 
     src = ./.;
 
-    propagatedBuildInputs = with pkgs.python3Packages; [ requests ];
+    propagatedBuildInputs = with pkgs.python3Packages; [ requests toml ];
 
     doCheck = false;
 
@@ -64,7 +67,7 @@ let
 
 in
 
-# Final Package Combining Both
+# Final Package Combining Both (unchanged)
 pkgs.stdenv.mkDerivation {
   name = "readwise-to-zotero-with-translation-server";
 
@@ -81,7 +84,6 @@ pkgs.stdenv.mkDerivation {
 
     # Start translation server in the background
     translation-server &
-
     TRANSLATION_SERVER_PID=$!
 
     # Wait a bit to ensure the server has started
