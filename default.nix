@@ -49,7 +49,7 @@ pkgs.stdenv.mkDerivation {
     mkdir -p $out/bin
 
     # Wrapper script to start the translation server and run the Python script
-    cat > $out/bin/readwise-to-zotero <<'EOF'
+    cat > $out/bin/url-to-bibtex <<'EOF'
     #!/usr/bin/env bash
 
     set -e
@@ -68,7 +68,7 @@ pkgs.stdenv.mkDerivation {
     kill $TRANSLATION_SERVER_PID
     EOF
 
-    chmod +x $out/bin/readwise-to-zotero
+    chmod +x $out/bin/url-to-bibtex
   '';
 
   meta = with pkgs.lib; {
