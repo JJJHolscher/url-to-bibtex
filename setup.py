@@ -8,7 +8,6 @@ setup(
     install_requires=[
         'requests',
         'toml',
-        'argparse',
     ],
     entry_points={
         'console_scripts': [

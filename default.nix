@@ -1,37 +1,42 @@
+
 { pkgs ? import <nixpkgs> {} }:
 
 let
   inherit (pkgs) fetchFromGitHub;
   inherit (pkgs.lib) licenses;
 
-  lib = pkgs.lib;
+  # Node packages
+  nodePackages = pkgs.nodePackages;
 
-  # Translation Server Package (unchanged)
-  translation-server = pkgs.stdenv.mkDerivation rec {
+  # Translation Server Version
+  translationServerVersion = "c4f03e78e1c50dc61a2b8e5a452284581d9ad0e3"; # Specific commit for reproducibility
+
+  # Translation Server Package
+  translation-server = nodePackages.buildNodePackage rec {
     pname = "translation-server";
-    version = "master";
+    version = translationServerVersion;
 
     src = fetchFromGitHub {
       owner = "zotero";
       repo = "translation-server";
-      rev = "master";
-      sha256 = lib.fakeSha256;  # Replace with the correct hash after building
+      rev = translationServerVersion;
+      sha256 =  "sha256-w60KHZsrg+0Cm6zd7Z5t+OZy/p+HWvTQokXQEKBXWow="; # Replace with the correct hash
     };
 
-    nativeBuildInputs = [ pkgs.nodejs ];
-
-    buildPhase = ''
-      runHook preBuild
-      npm install
-      runHook postBuild
+    # Replace SSH URLs with HTTPS in package.json
+    postPatch = ''
+      substituteInPlace package.json \
+        --replace "git+ssh://git@github.com/" "git+https://github.com/"
     '';
 
-    installPhase = ''
-      mkdir -p $out/bin
-      cp -r * $out/
-      chmod +x $out/translation-server.js
-      ln -s $out/translation-server.js $out/bin/translation-server
+    # Fix the shebang line in translation-server.js
+    postInstall = ''
+      substituteInPlace $out/translation-server.js \
+        --replace "#!/usr/bin/env node" "#!${pkgs.nodejs}/bin/node"
     '';
+
+    # Expose the binary
+    pkgBin = "translation-server.js";
 
     meta = with pkgs.lib; {
       description = "Zotero Translation Server";
@@ -41,10 +46,10 @@ let
     };
   };
 
-  # Python Script Package with Updated Dependencies
+  # Python Script Package
   readwise-to-zotero = pkgs.python3Packages.buildPythonApplication {
     pname = "readwise-to-zotero";
-    version = "0.1";
+    version = "0.1.0";
 
     src = ./.;
 
@@ -54,7 +59,7 @@ let
 
     installPhase = ''
       mkdir -p $out/bin
-      install -m755 readwise_to_zotero.py $out/bin/readwise_to_zotero.py
+      install -m755 readwise_to_zotero/main.py $out/bin/readwise-to-zotero
     '';
 
     meta = with pkgs.lib; {
@@ -67,7 +72,7 @@ let
 
 in
 
-# Final Package Combining Both (unchanged)
+# Final Package Combining Both
 pkgs.stdenv.mkDerivation {
   name = "readwise-to-zotero-with-translation-server";
 
@@ -90,7 +95,7 @@ pkgs.stdenv.mkDerivation {
     sleep 5
 
     # Run the Python script
-    readwise_to_zotero.py "$@"
+    readwise-to-zotero "$@"
 
     # Kill the translation server
     kill $TRANSLATION_SERVER_PID
@@ -106,4 +111,3 @@ pkgs.stdenv.mkDerivation {
     platforms = platforms.unix;
   };
 }
-
