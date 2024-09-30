@@ -16,7 +16,7 @@
         packages.default = pkgs.callPackage ./default.nix { inherit translation-server; };
         apps.default = flake-utils.lib.mkApp {
           drv = self.packages.${system}.default;
-          name = "readwise-to-zotero";
+          name = "url-to-bibtex";
         };
       }
     );
