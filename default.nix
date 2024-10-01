@@ -17,24 +17,9 @@ let
     propagatedBuildInputs = with pkgs.python3Packages; [ requests toml ];
 
     doCheck = false;
-
-    # installPhase = ''
-      # mkdir -p $out/bin
-      # install -m755 readwise_to_zotero.py $out/bin/readwise-to-zotero
-    # '';
-
-    meta = with pkgs.lib; {
-      description = "CLI tool to import Readwise data into Zotero";
-      homepage = "https://github.com/yourusername/readwise-to-zotero";
-      license = licenses.mit;
-      platforms = platforms.all;
-    };
   };
 
-in
-
-# Final Package Combining Both
-pkgs.stdenv.mkDerivation {
+in pkgs.stdenv.mkDerivation {
   name = "url-to-bibtex";
 
   # Specify that there is no source
@@ -52,29 +37,62 @@ pkgs.stdenv.mkDerivation {
     cat > $out/bin/url-to-bibtex <<'EOF'
     #!/usr/bin/env bash
 
+    # Only print to stderr if the --verbose flag is given.
+    verbose=false
+    for arg in "$@"; do
+      case "$arg" in
+        -v|--verbose)
+          verbose=true
+          ;;
+      esac
+    done
+    if [ "$verbose" = "false" ]; then
+      exec 2>/dev/null
+    fi
+
     set -e
 
     # Start translation server in the background
-    ${translation-server}/bin/zotero-translation-server &
+    export USER_AGENT='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 url-to-bibtex/2.0'
+    ${translation-server}/bin/zotero-translation-server >&2 &
     TRANSLATION_SERVER_PID=$!
 
-    # Wait a bit to ensure the server has started
-    sleep 5
+    # Function to handle cleanup
+    cleanup() {
+        kill "$TRANSLATION_SERVER_PID" 2>/dev/null
+        wait "$TRANSLATION_SERVER_PID" 2>/dev/null
+    }
+
+    # Trap EXIT, INT, TERM, and ERR signals to run cleanup
+    trap cleanup EXIT INT TERM ERR
+
+    # Wait for the server to be ready.
+    is_server_up() {
+      # Attempt to connect to the server's port
+      ${pkgs.netcat}/bin/nc -z "0.0.0.0" "1969" >/dev/null 2>&1
+    }
+
+    tries=0
+    until is_server_up; do
+      if [ "$tries" -ge 30 ]; then
+          echo "maximum tries exceeded, translation server won't respond" >&2
+          exit 1
+      fi
+      sleep 0.5
+      tries=$((tries + 1))
+    done
 
     # Run the Python script
     ${url-to-bibtex}/bin/url-to-bibtex "$@"
-
-    # Kill the translation server
-    kill $TRANSLATION_SERVER_PID
     EOF
 
     chmod +x $out/bin/url-to-bibtex
   '';
 
-  meta = with pkgs.lib; {
-    description = "CLI tool to import Readwise data into Zotero, includes the translation server";
-    homepage = "https://github.com/yourusername/readwise-to-zotero";
+  meta = {
+    description = "A CLI to convert urls to bibtex, powered by Zotero's translation server.";
+    homepage = "https://github.com/jjjholscher/url-to-bibtex";
     license = licenses.mit;
-    platforms = platforms.all;
+    platforms = pkgs.lib.platforms.all;
   };
 }
