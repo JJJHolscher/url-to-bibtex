@@ -111,11 +111,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1727724999,
-        "narHash": "sha256-JZZatY8pIIpjmcthnQl2cpyl9yX7kXUuBgblJhR86YE=",
+        "lastModified": 1730385874,
+        "narHash": "sha256-Go8oXXYhViXXTSEeLDUjirCK8phRnl8xdkb8UUbKU9s=",
         "owner": "jjjholscher",
         "repo": "translation-server",
-        "rev": "07ba4ad37b83176cd1fb00ee5a233aba893931a0",
+        "rev": "eab6dd254a43ce88d5354b02131fa91b9c8375cc",
         "type": "github"
       },
       "original": {
